@@ -1,0 +1,21 @@
+{
+  "name": "ca-dmv-poller",
+  "version": "0.0.1",
+  "description": "A tool to poll multiple DMV locations and find the earliest available appointment time.",
+  "scripts": {
+    "build": "tsc"
+  },
+  "main": "dist/index.js",
+  "author": "Noah Klayman <noahklayman@gmail.com>",
+  "license": "MIT",
+  "private": false,
+  "dependencies": {
+    "@google/maps": "^0.5.5"
+  },
+  "devDependencies": {
+    "@types/node": "^10.9.4",
+    "tslint": "^5.11.0",
+    "tslint-config-standard": "^8.0.1",
+    "typescript": "^3.0.3"
+  }
+}
