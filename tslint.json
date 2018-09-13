@@ -5,5 +5,8 @@
   "rules": {
     "interface-name": [false, "always-prefix"]
   },
-  "rulesDirectory": []
+  "rulesDirectory": [],
+  "linterOptions": {
+    "exclude": ["**/*.json"]
+  }
 }
