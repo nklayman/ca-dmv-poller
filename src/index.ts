@@ -22,7 +22,7 @@ export = class Poller extends EventEmitter {
         for (const dmvOffice of validDmvLocations) {
           try {
             const responseString = await this.makeDMVRequest(dmvOffice)
-            await this.checkAppointmentResult(dmvOffice.name, responseString)
+            this.checkAppointmentResult(dmvOffice.name, responseString)
           } catch (e) {
             return reject(e)
           }
@@ -36,25 +36,47 @@ export = class Poller extends EventEmitter {
   public getHomeLocation (): Promise<any> {
     return new Promise((resolve, reject) => {
       const { settings } = this
-      const client = gm.createClient({
-        key: settings.mapsApiKey
-      })
-      client.geocode(
-        { address: settings.address },
-        (err: Error, results: any) => {
-          const data = results.json
-          if (
-            !err &&
-            data.results &&
-            data.results[0] &&
-            data.results[0].geometry
-          ) {
-            resolve(data.results[0].geometry.location)
-          } else {
-            return reject(new Error('Unable to determine location.'))
-          }
-        }
-      )
+      const postData: { [index: string]: any } = {
+        address: settings.address,
+        benchmark: 4,
+        format: 'json'
+      }
+
+      const postString = querystring.stringify(postData)
+      const options = {
+        host: 'geocoding.geo.census.gov',
+        method: 'GET',
+        path: '/geocoder/locations/onelineaddress?' + postString,
+        port: 443
+      }
+
+      const req = https
+        .request(options, (res) => {
+          res.setEncoding('utf-8')
+          let responseString = ''
+
+          res.on('data', (data) => {
+            responseString += data
+          })
+          res.on('end', () => {
+            try {
+              const { result } = JSON.parse(responseString)
+              const addressMatches = result.addressMatches
+              const coords = addressMatches[0].coordinates
+              resolve({ lat: coords.y, lng: coords.x })
+            } catch {
+              return reject(
+                new Error(
+                  'Unable to determine location. Make sure you are provided a valid address.'
+                )
+              )
+            }
+          })
+          res.on('error', (e) => {
+            return reject(e)
+          })
+        })
+        .end()
     })
   }
   public getNearbyDMVs (): Promise<DmvLocation[]> {

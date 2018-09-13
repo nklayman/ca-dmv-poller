@@ -12,8 +12,6 @@ interface AppointmentInfo {
 
 export interface Settings {
   itemsToProcess: number
-  /** The API Key for Google Maps */
-  mapsApiKey: string
   /** The address from which to search for DMV offices */
   address: string
   /** The distance from the address to search for DMV offices */
