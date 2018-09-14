@@ -4,9 +4,11 @@
   "description": "A tool to poll multiple DMV locations and find the earliest available appointment time.",
   "scripts": {
     "build": "tsc",
-    "lint": "tslint --project ./"
+    "lint": "tslint --project ./",
+    "prepublishOnly": "tsc"
   },
   "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "author": "Noah Klayman <noahklayman@gmail.com>",
   "license": "MIT",
   "private": false,
