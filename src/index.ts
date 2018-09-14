@@ -1,4 +1,3 @@
-import gm from '@google/maps'
 import EventEmitter from 'events'
 import https from 'https'
 import querystring from 'querystring'
@@ -64,7 +63,7 @@ export = class Poller extends EventEmitter {
           port: 443
         }
 
-        const req = https
+        https
           .request(options, (res) => {
             res.setEncoding('utf-8')
             let responseString = ''
