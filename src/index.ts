@@ -34,49 +34,68 @@ export = class Poller extends EventEmitter {
     })
   }
   public getHomeLocation (): Promise<any> {
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
       const { settings } = this
-      const postData: { [index: string]: any } = {
-        address: settings.address,
-        benchmark: 4,
-        format: 'json'
-      }
+      if (settings.zipCode) {
+        const zipCode = ((await import('./zipCodes.json')) as any)[
+          settings.zipCode
+        ]
+        if (zipCode) {
+          resolve({ lat: zipCode[0], lng: zipCode[1] })
+        } else {
+          return reject(
+            new Error(
+              'Unable to find coordinates of zip code. Make sure it is a valid California zip code.'
+            )
+          )
+        }
+      } else if (settings.address) {
+        const postData: { [index: string]: any } = {
+          address: settings.address,
+          benchmark: 4,
+          format: 'json'
+        }
 
-      const postString = querystring.stringify(postData)
-      const options = {
-        host: 'geocoding.geo.census.gov',
-        method: 'GET',
-        path: '/geocoder/locations/onelineaddress?' + postString,
-        port: 443
-      }
+        const postString = querystring.stringify(postData)
+        const options = {
+          host: 'geocoding.geo.census.gov',
+          method: 'GET',
+          path: '/geocoder/locations/onelineaddress?' + postString,
+          port: 443
+        }
 
-      const req = https
-        .request(options, (res) => {
-          res.setEncoding('utf-8')
-          let responseString = ''
+        const req = https
+          .request(options, (res) => {
+            res.setEncoding('utf-8')
+            let responseString = ''
 
-          res.on('data', (data) => {
-            responseString += data
-          })
-          res.on('end', () => {
-            try {
-              const { result } = JSON.parse(responseString)
-              const addressMatches = result.addressMatches
-              const coords = addressMatches[0].coordinates
-              resolve({ lat: coords.y, lng: coords.x })
-            } catch {
-              return reject(
-                new Error(
-                  'Unable to determine location. Make sure you are provided a valid address.'
+            res.on('data', (data) => {
+              responseString += data
+            })
+            res.on('end', () => {
+              try {
+                const { result } = JSON.parse(responseString)
+                const addressMatches = result.addressMatches
+                const coords = addressMatches[0].coordinates
+                resolve({ lat: coords.y, lng: coords.x })
+              } catch {
+                return reject(
+                  new Error(
+                    'Unable to determine location. Make sure you are provided a valid address.'
+                  )
                 )
-              )
-            }
+              }
+            })
+            res.on('error', (e) => {
+              return reject(e)
+            })
           })
-          res.on('error', (e) => {
-            return reject(e)
-          })
-        })
-        .end()
+          .end()
+      } else {
+        return reject(
+          new Error('Please provide either an address or a zip code.')
+        )
+      }
     })
   }
   public getNearbyDMVs (): Promise<DmvLocation[]> {
@@ -84,9 +103,11 @@ export = class Poller extends EventEmitter {
       const coordinates: {
         lat: number;
         lng: number;
-      } = await this.getHomeLocation().catch((e) => {
-        return reject(e)
-      })
+      } =
+        this.settings.coords ||
+        (await this.getHomeLocation().catch((e) => {
+          return reject(e)
+        }))
       const validDmvLocations: DmvLocation[] = []
       try {
         Object.keys(dmvInfo).forEach((dmvName) => {

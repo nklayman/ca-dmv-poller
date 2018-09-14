@@ -13,7 +13,14 @@ interface AppointmentInfo {
 export interface Settings {
   itemsToProcess: number
   /** The address from which to search for DMV offices */
-  address: string
+  address?: string
+  /** The zip code from which to search for DMV offices */
+  zipCode?: string
+  /** The coordinates from which to search for DMV offices */
+  coords?: {
+    lat: string;
+    lng: string;
+  }
   /** The distance from the address to search for DMV offices */
   maxDistanceMiles: number
   /** Type of test to poll for. Either DriveTest or OfficeVisit */
