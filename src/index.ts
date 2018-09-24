@@ -5,7 +5,7 @@ import coordinateDistance from './coordinateDistance'
 import dmvInfo from './dmvInfo.json'
 import { DmvLocation, Settings } from './types/index'
 
-export = class Poller extends EventEmitter {
+export default class Poller extends EventEmitter {
   public results: any[]
   private settings: Settings
   constructor (settings: Settings) {
