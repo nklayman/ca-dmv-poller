@@ -36,9 +36,7 @@ export default class Poller extends EventEmitter {
     return new Promise(async (resolve, reject) => {
       const { settings } = this
       if (settings.zipCode) {
-        const zipCode = ((await import('./zipCodes.json')) as any)[
-          settings.zipCode
-        ]
+        const zipCode = (await import('./zipCodes.json'))[settings.zipCode]
         if (zipCode) {
           resolve({ lat: zipCode[0], lng: zipCode[1] })
         } else {
@@ -110,7 +108,7 @@ export default class Poller extends EventEmitter {
       const validDmvLocations: DmvLocation[] = []
       try {
         Object.keys(dmvInfo).forEach((dmvName) => {
-          const officeInfo = (dmvInfo as any)[dmvName]
+          const officeInfo = dmvInfo[dmvName]
           const distance = coordinateDistance(
             coordinates.lat,
             coordinates.lng,
