@@ -28,7 +28,7 @@ export interface Settings {
   /** User's appointment information */
   appointmentInfo: AppointmentInfo
   /** Type of appointment. Office Visit only. */
-  appointmentType: 'CID' | 'RID' | 'VR'
+  appointmentTypes: Array<'CID' | 'RID' | 'VR'>
 }
 
 export interface DmvLocation {

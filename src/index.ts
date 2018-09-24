@@ -149,7 +149,9 @@ export = class Poller extends EventEmitter {
         ...settings.appointmentInfo
       }
       if (settings.mode === 'OfficeVisit') {
-        postData[`task${settings.appointmentType}`] = true
+        settings.appointmentTypes.forEach((type) => {
+          postData[`task${type}`] = true
+        })
       } else if (settings.mode !== 'DriveTest') {
         return reject(
           new Error(
