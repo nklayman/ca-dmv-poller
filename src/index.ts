@@ -123,7 +123,7 @@ export default class Poller extends EventEmitter {
             })
           }
         })
-        this.emit('getDmvLocations', validDmvLocations)
+        this.emit('findLocations', validDmvLocations)
         resolve(validDmvLocations)
       } catch (e) {
         return reject(e)
@@ -213,6 +213,6 @@ export default class Poller extends EventEmitter {
       location: name
     }
     this.results.push(result)
-    this.emit('findLocation', result)
+    this.emit('findAppointment', result)
   }
 }
