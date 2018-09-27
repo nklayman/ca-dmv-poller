@@ -61,33 +61,37 @@ export default class Poller extends EventEmitter {
           port: 443
         }
 
-        https
-          .request(options, (res) => {
-            res.setEncoding('utf-8')
-            let responseString = ''
+        const req = https.request(options, (res) => {
+          res.setEncoding('utf-8')
+          let responseString = ''
 
-            res.on('data', (data) => {
-              responseString += data
-            })
-            res.on('end', () => {
-              try {
-                const { result } = JSON.parse(responseString)
-                const addressMatches = result.addressMatches
-                const coords = addressMatches[0].coordinates
-                resolve({ lat: coords.y, lng: coords.x })
-              } catch {
-                return reject(
-                  new Error(
-                    'Unable to determine location. Make sure you are provided a valid address.'
-                  )
-                )
-              }
-            })
-            res.on('error', (e) => {
-              return reject(e)
-            })
+          res.on('data', (data) => {
+            responseString += data
           })
-          .end()
+          res.on('end', () => {
+            try {
+              const { result } = JSON.parse(responseString)
+              const addressMatches = result.addressMatches
+              const coords = addressMatches[0].coordinates
+              resolve({ lat: coords.y, lng: coords.x })
+            } catch {
+              return reject(
+                new Error(
+                  'Unable to determine location. Make sure you are providing a valid address.'
+                )
+              )
+            }
+          })
+          res.on('error', (e) => {
+            return reject(e)
+          })
+        })
+        req.on('error', () => {
+          return reject(
+            new Error('Unable to connect to US Census Geocoding service')
+          )
+        })
+        req.end()
       } else {
         return reject(
           new Error('Please provide either an address or a zip code.')
@@ -174,23 +178,29 @@ export default class Poller extends EventEmitter {
         path: this.getPath(),
         port: 443
       }
+      try {
+        const req = https.request(options, (res) => {
+          res.setEncoding('utf-8')
+          let responseString = ''
 
-      const req = https.request(options, (res) => {
-        res.setEncoding('utf-8')
-        let responseString = ''
-
-        res.on('data', (data) => {
-          responseString += data
+          res.on('data', (data) => {
+            responseString += data
+          })
+          res.on('end', () => {
+            resolve(responseString)
+          })
+          req.on('error', (e) => {
+            return reject(e)
+          })
         })
-        res.on('end', () => {
-          resolve(responseString)
+        req.on('error', () => {
+          return reject(new Error('Could not connect to DMV servers'))
         })
-        req.on('error', (e) => {
-          reject(e)
-        })
-      })
-      req.write(postString)
-      req.end()
+        req.write(postString)
+        req.end()
+      } catch {
+        return reject(new Error('Could not connect to DMV servers'))
+      }
     })
   }
   public checkAppointmentResult (name: string, body: string) {
