@@ -21,7 +21,11 @@ export default class Poller extends EventEmitter {
         for (const dmvOffice of validDmvLocations) {
           try {
             const responseString = await this.makeDMVRequest(dmvOffice)
-            this.checkAppointmentResult(dmvOffice.name, responseString)
+            this.checkAppointmentResult(
+              dmvOffice.name,
+              responseString,
+              dmvOffice.id
+            )
           } catch (e) {
             return reject(e)
           }
@@ -204,7 +208,7 @@ export default class Poller extends EventEmitter {
       }
     })
   }
-  public checkAppointmentResult (name: string, body: string) {
+  public checkAppointmentResult (name: string, body: string, id: number) {
     const dateMatch = body.match(
       / .*, .* \d{1,2}, \d{4} at \d{1,2}:\d{2} (AM|PM)/
     )
@@ -221,6 +225,7 @@ export default class Poller extends EventEmitter {
     const result = {
       date,
       daysUntil,
+      id,
       location: name
     }
     this.results.push(result)
