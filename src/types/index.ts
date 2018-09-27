@@ -4,10 +4,12 @@ interface AppointmentInfo {
   telArea: number
   telPrefix: number
   telSuffix: number
-  dlNumber?: ''
-  birthMonth?: ''
-  birthDay?: ''
-  birthYear?: ''
+  dlNumber?: string
+  birthMonth?: string
+  birthDay?: string
+  birthYear?: string
+  requestedTask?: 'DT' | 'MC'
+  safetyCourseCompletedSelection: 'TRUE' | 'FALSE'
 }
 
 export interface Settings {
