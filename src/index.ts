@@ -141,28 +141,29 @@ export default class Poller extends EventEmitter {
       return '/wasapp/foa/findOfficeVisit.do'
     }
   }
-  public makeDMVRequest (officeInfo: DmvLocation): Promise<string> {
+  public getRequestString (id: number) {
     const { settings } = this
-    return new Promise((resolve, reject) => {
-      const postData: { [index: string]: any } = {
-        mode: settings.mode,
-        numberItems: settings.itemsToProcess,
-        officeId: officeInfo.id,
-        ...settings.appointmentInfo
-      }
-      if (settings.mode === 'OfficeVisit') {
-        settings.appointmentTypes.forEach((type) => {
-          postData[`task${type}`] = true
-        })
-      } else if (settings.mode !== 'DriveTest') {
-        return reject(
-          new Error(
-            'Please make sure the mode is set to "OfficeVisit" or "DriveTest"'
-          )
-        )
-      }
+    const postData: { [index: string]: any } = {
+      mode: settings.mode,
+      numberItems: settings.itemsToProcess,
+      officeId: id,
+      ...settings.appointmentInfo
+    }
+    if (settings.mode === 'OfficeVisit') {
+      settings.appointmentTypes.forEach((type) => {
+        postData[`task${type}`] = true
+      })
+    } else if (settings.mode !== 'DriveTest') {
+      throw new Error(
+        'Please make sure the mode is set to "OfficeVisit" or "DriveTest"'
+      )
+    }
 
-      const postString = querystring.stringify(postData)
+    return querystring.stringify(postData)
+  }
+  public makeDMVRequest (officeInfo: DmvLocation): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const postString = this.getRequestString(officeInfo.id)
 
       const options = {
         headers: {
