@@ -171,7 +171,11 @@ export default class Poller extends EventEmitter {
   }
   public makeDMVRequest (officeInfo: DmvLocation): Promise<string> {
     return new Promise((resolve, reject) => {
-      if (cordova && cordova.plugin && cordova.plugin.http) {
+      if (
+        global.cordova &&
+        global.cordova.plugin &&
+        global.cordova.plugin.http
+      ) {
         const options = {
           data: this.getRequestString(officeInfo.id, false),
           headers: {
@@ -184,7 +188,7 @@ export default class Poller extends EventEmitter {
           },
           method: 'POST'
         }
-        cordova.plugin.http.sendRequest(
+        global.cordova.plugin.http.sendRequest(
           `https://www.dmv.ca.gov${this.getPath()}`,
           options,
           (response: any) => {

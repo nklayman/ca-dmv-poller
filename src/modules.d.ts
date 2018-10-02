@@ -1,3 +1,7 @@
 declare module '@google/maps'
 declare module '*.json'
-declare const cordova: any
+declare namespace NodeJS {
+  interface Global {
+    cordova: any
+  }
+}
