@@ -145,7 +145,7 @@ export default class Poller extends EventEmitter {
       return '/wasapp/foa/findOfficeVisit.do'
     }
   }
-  public getRequestString (id: number) {
+  public getRequestString (id: number, stringify = true) {
     const { settings } = this
     const postData: { [index: string]: any } = {
       mode: settings.mode,
@@ -163,48 +163,77 @@ export default class Poller extends EventEmitter {
       )
     }
 
-    return querystring.stringify(postData)
+    if (stringify) {
+      return querystring.stringify(postData)
+    } else {
+      return postData
+    }
   }
   public makeDMVRequest (officeInfo: DmvLocation): Promise<string> {
     return new Promise((resolve, reject) => {
-      const postString = this.getRequestString(officeInfo.id)
-
-      const options = {
-        headers: {
-          'Content-Length': postString.length,
-          'Content-Type': 'application/x-www-form-urlencoded',
-          // tslint:disable-next-line
-          Referer: `https://www.dmv.ca.gov${this.getPath()}`,
-          'User-Agent':
-            'Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.8.1.13) Gecko/20080311 Firefox/2.0.0.13'
-        },
-        host: 'www.dmv.ca.gov',
-        method: 'POST',
-        path: this.getPath(),
-        port: 443
-      }
-      try {
-        const req = https.request(options, (res) => {
-          res.setEncoding('utf-8')
-          let responseString = ''
-
-          res.on('data', (data) => {
-            responseString += data
-          })
-          res.on('end', () => {
-            resolve(responseString)
-          })
-          req.on('error', (e) => {
+      if (cordova && cordova.plugin && cordova.plugin.http) {
+        const options = {
+          data: this.getRequestString(officeInfo.id, false),
+          headers: {
+            // 'Content-Length': postString.length,
+            'Content-Type': 'application/x-www-form-urlencoded',
+            // tslint:disable-next-line
+            Referer: `https://www.dmv.ca.gov${this.getPath()}`,
+            'User-Agent':
+              'Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.8.1.13) Gecko/20080311 Firefox/2.0.0.13'
+          },
+          method: 'POST'
+        }
+        cordova.plugin.http.sendRequest(
+          `https://www.dmv.ca.gov${this.getPath()}`,
+          options,
+          (response: any) => {
+            resolve(response.data)
+          },
+          (e: Error) => {
             return reject(e)
+          }
+        )
+      } else {
+        const postString = this.getRequestString(officeInfo.id)
+        const options = {
+          headers: {
+            'Content-Length': postString.length,
+            'Content-Type': 'application/x-www-form-urlencoded',
+            // tslint:disable-next-line
+            Referer: `https://www.dmv.ca.gov${this.getPath()}`,
+            'User-Agent':
+              'Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.8.1.13) Gecko/20080311 Firefox/2.0.0.13'
+          },
+          host: 'www.dmv.ca.gov',
+          method: 'POST',
+          path: this.getPath(),
+          port: 443
+        }
+
+        try {
+          const req = https.request(options, (res) => {
+            res.setEncoding('utf-8')
+            let responseString = ''
+
+            res.on('data', (data) => {
+              responseString += data
+            })
+            res.on('end', () => {
+              resolve(responseString)
+            })
+            req.on('error', (e) => {
+              return reject(e)
+            })
           })
-        })
-        req.on('error', () => {
+          req.on('error', () => {
+            return reject(new Error('Could not connect to DMV servers'))
+          })
+          req.write(postString)
+          req.end()
+        } catch {
           return reject(new Error('Could not connect to DMV servers'))
-        })
-        req.write(postString)
-        req.end()
-      } catch {
-        return reject(new Error('Could not connect to DMV servers'))
+        }
       }
     })
   }
