@@ -171,6 +171,10 @@ export default class Poller extends EventEmitter {
   }
   public makeDMVRequest (officeInfo: DmvLocation): Promise<string> {
     return new Promise((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        // Fail location if requests takes longer than 20 seconds
+        resolve('timeout')
+      }, 15000)
       if (
         global.cordova &&
         global.cordova.plugin &&
@@ -192,9 +196,11 @@ export default class Poller extends EventEmitter {
           `https://www.dmv.ca.gov${this.getPath()}`,
           options,
           (response: any) => {
+            clearTimeout(timeout)
             resolve(response.data)
           },
           (e: Error) => {
+            clearTimeout(timeout)
             return reject(e)
           }
         )
@@ -224,18 +230,22 @@ export default class Poller extends EventEmitter {
               responseString += data
             })
             res.on('end', () => {
+              clearTimeout(timeout)
               resolve(responseString)
             })
             req.on('error', (e) => {
+              clearTimeout(timeout)
               return reject(e)
             })
           })
           req.on('error', () => {
+            clearTimeout(timeout)
             return reject(new Error('Could not connect to DMV servers'))
           })
           req.write(postString)
           req.end()
         } catch {
+          clearTimeout(timeout)
           return reject(new Error('Could not connect to DMV servers'))
         }
       }
@@ -246,10 +256,36 @@ export default class Poller extends EventEmitter {
       / .*, .* \d{1,2}, \d{4} at \d{1,2}:\d{2} (AM|PM)/
     )
     if (!dateMatch || dateMatch.length < 1) {
-      throw new Error(
-        // tslint:disable-next-line
-        "Either your appointment info was incorrect, or the DMV has blocked your IP address temporarily for making too many requests."
-      )
+      if (/Please correct the following error\(s\)/.test(body)) {
+        throw new Error(
+          'It appears your appointment information was incorrect.'
+        )
+      } else if (
+        body.match(
+          'Sorry , you are ineligible to make a Behind-the-Wheel driving test appointment online.' +
+            '  For additional information, please call 1-800-777-0133.'
+        )
+      ) {
+        throw new Error(
+          'You can only make a driving test appointment within 60 days of having your permit for 6 months.'
+        )
+      } else if (/The requested webpage was rejected\./.test(body)) {
+        throw new Error(
+          'You have been temporarily blocked from accessing DMV services. Wait a few minutes and try again.'
+        )
+      } else {
+        const errorMsg = {
+          cause: body === 'timeout' ? 'timeout' : 'unknown',
+          id,
+          location: name,
+          response: body,
+          status: 'failed'
+        }
+        this.results.push(errorMsg)
+        this.emit('findAppointment', errorMsg)
+
+        return
+      }
     }
     const dateString = dateMatch[0].replace(' at', ',')
     const date = new Date(Date.parse(dateString))
