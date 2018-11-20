@@ -1,6 +1,6 @@
 import EventEmitter from 'events'
-import https from 'https'
-import querystring from 'querystring'
+import got from 'got'
+import captcha from './captcha'
 import coordinateDistance from './coordinateDistance'
 import dmvInfo from './dmvInfo.json'
 import { DmvLocation, Settings } from './types/index'
@@ -51,30 +51,22 @@ export default class Poller extends EventEmitter {
           )
         }
       } else if (settings.address) {
-        const postData: { [index: string]: any } = {
-          address: settings.address,
-          benchmark: 4,
-          format: 'json'
+        const options: { [index: string]: any } = {
+          body: {
+            address: settings.address,
+            benchmark: 4,
+            format: 'json'
+          },
+          method: 'GET'
         }
 
-        const postString = querystring.stringify(postData)
-        const options = {
-          host: 'geocoding.geo.census.gov',
-          method: 'GET',
-          path: '/geocoder/locations/onelineaddress?' + postString,
-          port: 443
-        }
-
-        const req = https.request(options, (res) => {
-          res.setEncoding('utf-8')
-          let responseString = ''
-
-          res.on('data', (data) => {
-            responseString += data
-          })
-          res.on('end', () => {
+        got(
+          'https://geocoding.geo.census.gov/geocoder/locations/onelineaddress?',
+          options
+        )
+          .then(({ body }) => {
             try {
-              const { result } = JSON.parse(responseString)
+              const result = JSON.parse(body)
               const addressMatches = result.addressMatches
               const coords = addressMatches[0].coordinates
               resolve({ lat: coords.y, lng: coords.x })
@@ -86,16 +78,11 @@ export default class Poller extends EventEmitter {
               )
             }
           })
-          res.on('error', (e) => {
-            return reject(e)
+          .catch(() => {
+            return reject(
+              new Error('Unable to connect to US Census Geocoding service')
+            )
           })
-        })
-        req.on('error', () => {
-          return reject(
-            new Error('Unable to connect to US Census Geocoding service')
-          )
-        })
-        req.end()
       } else {
         return reject(
           new Error('Please provide either an address or a zip code.')
@@ -145,12 +132,13 @@ export default class Poller extends EventEmitter {
       return '/wasapp/foa/findOfficeVisit.do'
     }
   }
-  public getRequestString (id: number, stringify = true) {
+  public getRequestData (id: number) {
     const { settings } = this
     const postData: { [index: string]: any } = {
       mode: settings.mode,
       numberItems: settings.itemsToProcess,
       officeId: id,
+      ...captcha,
       ...settings.appointmentInfo
     }
     if (settings.mode === 'OfficeVisit') {
@@ -163,16 +151,12 @@ export default class Poller extends EventEmitter {
       )
     }
 
-    if (stringify) {
-      return querystring.stringify(postData)
-    } else {
-      return postData
-    }
+    return postData
   }
   public makeDMVRequest (officeInfo: DmvLocation): Promise<string> {
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
       const timeout = setTimeout(() => {
-        // Fail location if requests takes longer than 20 seconds
+        // Fail location if requests takes longer than 15 seconds
         resolve('timeout')
       }, 15000)
       if (
@@ -181,14 +165,9 @@ export default class Poller extends EventEmitter {
         global.cordova.plugin.http
       ) {
         const options = {
-          data: this.getRequestString(officeInfo.id, false),
+          data: this.getRequestData(officeInfo.id),
           headers: {
-            // 'Content-Length': postString.length,
-            'Content-Type': 'application/x-www-form-urlencoded',
-            // tslint:disable-next-line
-            Referer: `https://www.dmv.ca.gov${this.getPath()}`,
-            'User-Agent':
-              'Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.8.1.13) Gecko/20080311 Firefox/2.0.0.13'
+            'Content-Type': 'application/x-www-form-urlencoded'
           },
           method: 'POST'
         }
@@ -199,51 +178,24 @@ export default class Poller extends EventEmitter {
             clearTimeout(timeout)
             resolve(response.data)
           },
-          (e: Error) => {
+          () => {
             clearTimeout(timeout)
-            return reject(e)
+            return reject(new Error('Could not connect to DMV servers'))
           }
         )
       } else {
-        const postString = this.getRequestString(officeInfo.id)
-        const options = {
-          headers: {
-            'Content-Length': postString.length,
-            'Content-Type': 'application/x-www-form-urlencoded',
-            // tslint:disable-next-line
-            Referer: `https://www.dmv.ca.gov${this.getPath()}`,
-            'User-Agent':
-              'Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.8.1.13) Gecko/20080311 Firefox/2.0.0.13'
-          },
-          host: 'www.dmv.ca.gov',
-          method: 'POST',
-          path: this.getPath(),
-          port: 443
+        const options: { [index: string]: any } = {
+          body: this.getRequestData(officeInfo.id),
+          form: true
         }
 
         try {
-          const req = https.request(options, (res) => {
-            res.setEncoding('utf-8')
-            let responseString = ''
-
-            res.on('data', (data) => {
-              responseString += data
-            })
-            res.on('end', () => {
-              clearTimeout(timeout)
-              resolve(responseString)
-            })
-            req.on('error', (e) => {
-              clearTimeout(timeout)
-              return reject(e)
-            })
-          })
-          req.on('error', () => {
-            clearTimeout(timeout)
-            return reject(new Error('Could not connect to DMV servers'))
-          })
-          req.write(postString)
-          req.end()
+          const { body: response } = await got.post(
+            `https://www.dmv.ca.gov${this.getPath()}`,
+            options
+          )
+          clearTimeout(timeout)
+          resolve(response)
         } catch {
           clearTimeout(timeout)
           return reject(new Error('Could not connect to DMV servers'))
