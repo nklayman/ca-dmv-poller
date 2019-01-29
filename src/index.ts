@@ -3,6 +3,7 @@ import got from 'got'
 import captcha from './captcha'
 import coordinateDistance from './coordinateDistance'
 import dmvInfo from './dmvInfo.json'
+import errors from './errorCodes'
 import { DmvLocation, Settings } from './types/index'
 
 export default class Poller extends EventEmitter {
@@ -208,36 +209,25 @@ export default class Poller extends EventEmitter {
       / .*, .* \d{1,2}, \d{4} at \d{1,2}:\d{2} (AM|PM)/
     )
     if (!dateMatch || dateMatch.length < 1) {
-      if (/Please correct the following error\(s\)/.test(body)) {
-        throw new Error(
-          'It appears your appointment information was incorrect.'
-        )
-      } else if (
-        body.match(
-          'Sorry , you are ineligible to make a Behind-the-Wheel driving test appointment online.' +
-            '  For additional information, please call 1-800-777-0133.'
-        )
-      ) {
-        throw new Error(
-          'You can only make a driving test appointment within 60 days of having your permit for 6 months.'
-        )
-      } else if (/The requested webpage was rejected\./.test(body)) {
-        throw new Error(
-          'You have been temporarily blocked from accessing DMV services. Wait a few minutes and try again.'
-        )
-      } else {
-        const errorMsg = {
-          cause: body === 'timeout' ? 'timeout' : 'unknown',
-          id,
-          location: name,
-          response: body,
-          status: 'failed'
+      // Check for known errors
+      errors.forEach(({ error, match }) => {
+        if (body.match(match)) {
+          throw new Error(error)
         }
-        this.results.push(errorMsg)
-        this.emit('findAppointment', errorMsg)
+      })
 
-        return
+      // Unknown error, mark appointment as failed
+      const errorMsg = {
+        cause: body === 'timeout' ? 'timeout' : 'unknown',
+        id,
+        location: name,
+        response: body,
+        status: 'failed'
       }
+      this.results.push(errorMsg)
+      this.emit('findAppointment', errorMsg)
+
+      return
     }
     const dateString = dateMatch[0].replace(' at', ',')
     const date = new Date(Date.parse(dateString))
