@@ -6,7 +6,7 @@ import dmvInfo from './dmvInfo.json'
 import errors from './errorCodes'
 import { DmvLocation, Settings } from './types/index'
 
-export default class Poller extends EventEmitter {
+export = class Poller extends EventEmitter {
   public results: any[]
   private settings: Settings
   constructor (settings: Settings) {
