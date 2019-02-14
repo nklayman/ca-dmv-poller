@@ -13,6 +13,7 @@ interface AppointmentInfo {
 }
 
 export interface Settings {
+  /** Number of items that user would like to process */
   itemsToProcess: number
   /** The address from which to search for DMV offices */
   address?: string
@@ -20,8 +21,8 @@ export interface Settings {
   zipCode?: string
   /** The coordinates from which to search for DMV offices */
   coords?: {
-    lat: string;
-    lng: string;
+    lat: string
+    lng: string
   }
   /** The distance from the address to search for DMV offices */
   maxDistanceMiles: number
@@ -39,4 +40,21 @@ export interface DmvLocation {
   id: number
   lat: number
   lng: number
+}
+
+export interface Result {
+  /** The date of the appointment */
+  date?: Date
+  /** How many days until the appointment */
+  daysUntil?: number
+  /** ID of the DMV Office */
+  id: number
+  /** Name of the DMV Office */
+  location: string
+  /** Whether or not the request failed */
+  hasFailed?: boolean
+  /** Cause of the failure */
+  cause?: 'timeout' | 'unknown'
+  /** Data received from DMV server if the request failed */
+  response?: string
 }

@@ -4,17 +4,17 @@ import captcha from './captcha'
 import coordinateDistance from './coordinateDistance'
 import dmvInfo from './dmvInfo.json'
 import errors from './errorCodes'
-import { DmvLocation, Settings } from './types/index'
+import { DmvLocation, Result, Settings } from './types/index'
 
 export = class Poller extends EventEmitter {
-  public results: any[]
+  public results: Result[]
   private settings: Settings
   constructor (settings: Settings) {
     super()
     this.settings = settings
     this.results = []
   }
-  public check () {
+  public check (): Promise<Result[]> {
     return new Promise(async (resolve, reject) => {
       try {
         const validDmvLocations = await this.getNearbyDMVs()
@@ -94,8 +94,8 @@ export = class Poller extends EventEmitter {
   public getNearbyDMVs (): Promise<DmvLocation[]> {
     return new Promise(async (resolve, reject) => {
       const coordinates: {
-        lat: number;
-        lng: number;
+        lat: number
+        lng: number
       } =
         this.settings.coords ||
         (await this.getHomeLocation().catch((e) => {
@@ -217,12 +217,12 @@ export = class Poller extends EventEmitter {
       })
 
       // Unknown error, mark appointment as failed
-      const errorMsg = {
+      const errorMsg: Result = {
         cause: body === 'timeout' ? 'timeout' : 'unknown',
+        hasFailed: true,
         id,
         location: name,
-        response: body,
-        status: 'failed'
+        response: body
       }
       this.results.push(errorMsg)
       this.emit('findAppointment', errorMsg)
