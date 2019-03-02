@@ -1,6 +1,6 @@
 {
   "name": "ca-dmv-poller",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "A tool to poll multiple DMV locations and find the earliest available appointment time.",
   "scripts": {
     "build": "tsc",
