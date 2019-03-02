@@ -206,7 +206,7 @@ export = class Poller extends EventEmitter {
   }
   public checkAppointmentResult (name: string, body: string, id: number) {
     const dateMatch = body.match(
-      / .*, .* \d{1,2}, \d{4} at \d{1,2}:\d{2} (AM|PM)/
+      /.*, .* \d{1,2}, \d{4} at \d{1,2}:\d{2} (AM|PM)/
     )
     if (!dateMatch || dateMatch.length < 1) {
       // Check for known errors
