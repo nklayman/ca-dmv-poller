@@ -26,7 +26,7 @@ const poller = new Poller({
   coords: {
     lat: '38.733792',
     lng: '-121.141315'
-  } // or
+  }, // or
   address: '1600 Amphitheatre Pkwy, Mountain View, CA 94043',
 
   mode: 'OfficeVisit', // or 'DriveTest'
@@ -36,19 +36,17 @@ const poller = new Poller({
   appointmentTypes: ['CID'],
   // User's appointment information
   appointmentInfo: {
-    appointmentInfo: {
-      firstName: 'John',
-      lastName: 'Doe',
-      telArea: '123',
-      telPrefix: '456',
-      telSuffix: '7890',
-      birthDay: '01',
-      birthMonth: '01',
-      birthYear: '2001',
-      dlNumber: 'I0004567', // AKA Permit Number
-      requestedTask: 'DT', // (automobile) or 'MC' (motorcycle),
-      safetyCourseCompletedSelection: 'TRUE' // or 'FALSE', motorcycle test only
-    }
+    firstName: 'John',
+    lastName: 'Doe',
+    telArea: 123,
+    telPrefix: 456,
+    telSuffix: 7890,
+    birthDay: '01',
+    birthMonth: '01',
+    birthYear: '2001',
+    dlNumber: 'I0004567', // AKA Permit Number
+    requestedTask: 'DT', // (automobile) or 'MC' (motorcycle),
+    safetyCourseCompletedSelection: 'TRUE' // or 'FALSE', motorcycle test only
   }
 })
 
@@ -56,6 +54,7 @@ poller
   .check()
   .then(results => {
     results.forEach(result => {
+      // See src/types/index.ts for all the properties of the results object
       if (result.hasFailed) {
         console.log(
           `The request to ${result.location} (id ${
@@ -71,5 +70,8 @@ poller
   })
   .catch(e => console.error(e))
 ```
+
+## API
+See the [typescript type definitions](./src/types/index.ts). 
 
 Special Thanks to [Michael Vartan](https://github.com/vartan) and his tool, [ca-dmv-poller](https://github.com/vartan/ca-dmv-poller), for inspiration and initial implementation of this app.
