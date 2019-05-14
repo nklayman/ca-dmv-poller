@@ -1,3 +1,6 @@
+# This tool is deprecated, and no longer works
+Unfortunately, due to changes with the DMV appointent registration system, this tool no longer works. They make use of session cookies which I can't figure out how to mock properly. If you figure out how to make this work, please submit a PR, I would really appreciate it.
+
 # CA DMV Poller
 
 > A developer API to access the CA DMV appointment system
